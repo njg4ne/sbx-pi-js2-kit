@@ -115,28 +115,25 @@ optional.
 - **Non-interactive/CI with no network preset set** — the CLI can't prompt
   for one, so set it first: `sbx policy init balanced` (or `allow-all` /
   `deny-all`). Interactively, you're prompted on first run — nothing to do.
-- **Machine policy stricter than the kit's needs** — the kit already allows
+- **More (or less) egress for one sandbox** — the kit already allows
   `llm.jetstream-cloud.org` and `registry.npmjs.org`, so a plain JS2 session
-  works on any policy. If you want the agent to reach more, add per-sandbox
-  rules ([network rules](https://docs.docker.com/ai/governance/local/network-rules/)):
+  works on any machine policy. To widen or lock down just this sandbox, add
+  a rule scoped to it ([network rules](https://docs.docker.com/ai/governance/local/network-rules/)):
 
   ```bash
-  sbx policy allow network --sandbox pi github.com
+  sbx policy allow network --sandbox pi github.com    # one more host
+  sbx policy allow network --sandbox pi "**"          # all hosts (listed as "allow all hosts")
+  sbx policy deny  network --sandbox pi "**"          # lock this one down —
+                                                      # works even if the machine policy is open
+  sbx policy rm network --sandbox pi --resource "**"  # remove again
   ```
 
-  To give one sandbox *all* egress, use the bare `**` wildcard, which
-  matches any host (tested on sbx v0.50.1):
+  Tested on sbx v0.50.1. Deny rules cover TCP and UDP and override kit and
+  machine allows.
 
-  ```bash
-  sbx policy allow network --sandbox pi "**"
-  # ...later:
-  sbx policy rm network --sandbox pi --resource "**"
-  ```
-
-  > **Danger.** This removes the network isolation for that sandbox: the agent
-  > can reach any host — read and exfiltrate everything in its workspace,
-  > download and run anything. Prefer the kit's allowlist or named hosts, and
-  > only open `0.0.0.0/0` deliberately.
+  > **Danger.** `allow "**"` removes the network isolation for that sandbox:
+  > the agent can reach any host — read and exfiltrate everything in its
+  > workspace, download and run anything. Prefer named hosts.
 - **After changing the secret or the kit** — credential bindings and kit
   content are wired **at sandbox create time**; recreate the sandbox to pick
   up changes (`sbx rm pi && sbx run --name pi …`). Re-enter the key later
@@ -206,8 +203,8 @@ or just ask it something: `pi -p "what version are you running"`.
 Drafted by **Qwen 3.8 27B** running in the [pi](https://pi.dev) coding agent
 (itself running inside a sandbox of this kit, over the js2 provider), in
 back-and-forth with [@njg4ne](https://github.com/njg4ne), who oversaw,
-reviewed, and tested the commands hands-on (the per-sandbox `**` egress
-rule in particular). Still not rigorously tested as a whole — in
+reviewed, and tested the commands hands-on (the per-sandbox `**`
+allow/deny rules in particular). Still not rigorously tested as a whole — in
 particular, the `DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES` one-off was checked
 against the Docker docs but not executed. Report problems to the
 [kit repository](https://github.com/njg4ne/sbx-pi-js2-kit).
