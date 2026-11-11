@@ -9,6 +9,16 @@ sandbox:
   entrypoint:
     - pi
 
+permissions:
+  network:
+    allow:
+      # A credential's inject domains are not allowed implicitly; declare the
+      # domain here as well as in the credentials block below.
+      - llm.jetstream-cloud.org
+      # pi's runtime package installs (extensions, skills, prompt templates,
+      # themes) and the packages named in settings, fetched on startup.
+      - registry.npmjs.org
+
 credentials:
   - service: js2
     apiKey:
