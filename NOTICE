@@ -1,0 +1,10 @@
+NOTICE
+
+This kit configures the pi coding agent to use the Jetstream Cloud
+inference service. It derives from and references the Jetstream
+documentation:
+
+- https://docs.jetstream-cloud.org/
+- https://docs.jetstream-cloud.org/inference-service/overview/
+
+Copyright © 2026 The Trustees of Indiana University
