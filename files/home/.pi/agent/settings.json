@@ -1,0 +1,5 @@
+{
+  "$schema": "https://pi.dev/schemas/settings.schema.json",
+  "defaultProvider": "js2",
+  "defaultModel": "qwen-3.8-27b"
+}

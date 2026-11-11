@@ -1,0 +1,79 @@
+{
+    "$schema": "https://pi.dev/schemas/models.schema.json",
+    "providers": {
+        "js2": {
+            "baseUrl": "https://llm.jetstream-cloud.org/api",
+            "api": "openai-completions",
+            "apiKey": "$JS2_API_KEY",
+            "models": [
+                {
+                    "id": "gpt-oss-120b",
+                    "name": "GPT-OSS-120B",
+                    "reasoning": true,
+                    "contextWindow": 131072,
+                    "cost": {
+                        "input": 0.15,
+                        "output": 0.6,
+                        "cacheRead": 0.075,
+                        "cacheWrite": 0
+                    },
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": "low",
+                        "medium": "medium",
+                        "high": "high"
+                    }
+                },
+                {
+                    "id": "gemma-4-31b-it",
+                    "name": "Gemma-4-31B-IT",
+                    "reasoning": false,
+                    "contextWindow": 262144,
+                    "cost": {
+                        "input": 0.2,
+                        "output": 0.4,
+                        "cacheRead": 0,
+                        "cacheWrite": 0
+                    }
+                },
+                {
+                    "id": "muse-glimmer",
+                    "name": "Muse-Glimmer",
+                    "reasoning": false,
+                    "input": [
+                        "text",
+                        "image"
+                    ],
+                    "contextWindow": 524288,
+                    "cost": {
+                        "input": 0.3,
+                        "output": 1.2,
+                        "cacheRead": 0.04,
+                        "cacheWrite": 0
+                    }
+                },
+                {
+                    "id": "qwen-3.8-27b",
+                    "name": "Qwen-3.8-27B",
+                    "reasoning": true,
+                    "contextWindow": 262144,
+                    "cost": {
+                        "input": 0.15,
+                        "output": 1.875,
+                        "cacheRead": 0.0375,
+                        "cacheWrite": 0
+                    },
+                    "thinkingLevelMap": {
+                        "off": null,
+                        "minimal": null,
+                        "low": "low",
+                        "medium": "medium",
+                        "high": null,
+                        "xhigh": "xhigh"
+                    }
+                }
+            ]
+        }
+    }
+}

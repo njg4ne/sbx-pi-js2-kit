@@ -1,0 +1,19 @@
+schemaVersion: "2"
+kind: sandbox
+name: pi
+displayName: Pi + Jetstream JS2
+description: Pi coding agent using OpenAI-compatible Jetstream via sandbox secret js2
+sandbox:
+  image: docker.io/sbx/pi-image:latest
+  entrypoint:
+    - pi
+
+credentials:
+  - service: js2
+    apiKey:
+      name: JS2_API_KEY
+      proxyManaged: true
+      inject:
+        - domain: llm.jetstream-cloud.org
+          header: Authorization
+          format: 'Bearer %s'
