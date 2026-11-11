@@ -201,6 +201,17 @@ pi auth check --provider js2 --credentials --json
 
 or just ask it something: `pi -p "what version are you running"`.
 
+## About these docs
+
+Drafted by **Qwen 3.8 27B** running in the [pi](https://pi.dev) coding agent
+(itself running inside a sandbox of this kit, over the js2 provider), in
+back-and-forth with [@njg4ne](https://github.com/njg4ne), who oversaw and
+reviewed the result. Reviewed, but **not rigorously tested** — in particular,
+commands marked as unverified here (the `0.0.0.0/0` per-sandbox rule, the
+`DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES` one-off) were checked against the
+Docker docs but not executed. Report problems to the
+[kit repository](https://github.com/njg4ne/sbx-pi-js2-kit).
+
 ## Sources and references
 
 Authoritative sources this kit draws on:
