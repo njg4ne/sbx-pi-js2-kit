@@ -88,16 +88,12 @@ nothing — Pi works in the sandbox's own filesystem; move files with
    sbx settings set kit.allowedSources '["docker.io/","ghcr.io/njg4ne/"]'
    ```
 
-   One-off without touching your settings — the same value is read from an
-   environment variable:
-
-   ```bash
-   DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES='["docker.io/","ghcr.io/njg4ne/"]' \
-     sbx run --name pi ghcr.io/njg4ne/sbx-pi-js2-kit
-   ```
-
-   If a run fails with `source is not in your allowlist`, this is the step
-   you're missing. See [kit sources](https://docs.docker.com/ai/sandboxes/configuration/settings/#kitallowedsources)
+   There is **no per-command override**: the check runs in the `sandboxd`
+   daemon, and the env-var equivalent
+   (`DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES`) only takes effect on
+   `sbx daemon restart` — a variable prefixed to a single `sbx run` does
+   nothing while the daemon is already running (tested). Just set the
+   setting. See [kit sources](https://docs.docker.com/ai/sandboxes/configuration/settings/#kitallowedsources)
    for source formats.
 
 3. **The JS2 secret.** Assumes you have access to Jetstream Cloud through the
@@ -219,10 +215,9 @@ Drafted by **Qwen 3.8 27B** running in the [pi](https://pi.dev) coding agent
 (itself running inside a sandbox of this kit, over the js2 provider), in
 back-and-forth with [@njg4ne](https://github.com/njg4ne), who oversaw,
 reviewed, and tested the commands hands-on (the per-sandbox `**`
-allow/deny rules in particular). Still not rigorously tested as a whole — in
-particular, the `DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES` one-off was checked
-against the Docker docs but not executed. Report problems to the
-[kit repository](https://github.com/njg4ne/sbx-pi-js2-kit).
+allow/deny rules and the daemon-scoped behavior of the kit-source
+env var in particular). Still not rigorously tested as a whole. Report
+problems to the [kit repository](https://github.com/njg4ne/sbx-pi-js2-kit).
 
 ## Sources and references
 
