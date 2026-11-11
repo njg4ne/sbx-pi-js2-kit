@@ -19,7 +19,8 @@ The two base forms. Always pass `--name`: without it the sandbox is named
 `<agent>-<workdir>`, which is long and depends on where you stand. Short names
 keep every follow-up command (`sbx run --name …`, `ssh …`, `sbx rm …`)
 cheap to type. `pi` = kept around, `ephi` = ephemeral — a portmanteau
-(blend) of *ephemeral* + *pi*.
+(blend) of *ephemeral* + *pi*. These are just suggestions: any short name
+you like works, as long as you use it consistently.
 
 ```bash
 # One command: binds your current directory, attaches to Pi
