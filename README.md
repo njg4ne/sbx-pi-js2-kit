@@ -78,7 +78,10 @@ nothing — Pi works in the sandbox's own filesystem; move files with
 
 1. **Docker Sandboxes installed and signed in** — the `sbx` CLI
    ([install](https://docs.docker.com/ai/sandboxes/install/)) plus
-   `sbx login`.
+   `sbx login`. Signing in to a Docker account does **not** mean paying
+   anything: local sandboxes are free to use, including commercially —
+   the login is just an accountability/anti-abuse requirement. Easiest
+   way in: `sbx login` with GitHub OAuth.
 
 2. **Allow this kit's GHCR source.** `kit.allowedSources` **replaces the
    entire list** (default `["docker.io/"]`) — write back what you want to
