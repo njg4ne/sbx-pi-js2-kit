@@ -18,7 +18,8 @@ behavior can differ across versions, so if something fails, check
 The two base forms. Always pass `--name`: without it the sandbox is named
 `<agent>-<workdir>`, which is long and depends on where you stand. Short names
 keep every follow-up command (`sbx run --name …`, `ssh …`, `sbx rm …`)
-cheap to type. `pi` = kept around, `ephi` = ephemeral.
+cheap to type. `pi` = kept around, `ephi` = ephemeral — a portmanteau
+(blend) of *ephemeral* + *pi*.
 
 ```bash
 # One command: binds your current directory, attaches to Pi
