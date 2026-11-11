@@ -3,6 +3,7 @@ kind: sandbox
 name: pi
 displayName: Pi + Jetstream JS2
 description: Pi coding agent using OpenAI-compatible Jetstream via sandbox secret js2
+sourceURL: https://github.com/njg4ne/sbx-pi-js2-kit
 sandbox:
   image: docker.io/sbx/pi-image:latest
   entrypoint:
