@@ -1,13 +1,13 @@
-# sbx-pi-js2-kit
+# sbx-pi-js2-kit — Pi on Jetstream, in a Docker Sandbox
 
 A [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) kit that runs the
 [Pi](https://pi.dev) coding agent against **Jetstream Cloud (JS2)** inference,
 through the Open Web UI proxy. The stock `docker.io/sbx/pi-kit` is wired for
 llmman's Anthropic routing only; this kit reuses the same pre-baked
 `docker.io/sbx/pi-image:latest` but gives Pi its own `js2` OpenAI-compatible
-provider (`https://llm.jetstream-cloud.org/api`), with your key injected by the
-sandbox proxy as a `Bearer` header — the key never touches the sandbox
-filesystem. Published as `ghcr.io/njg4ne/sbx-pi-js2-kit`.
+provider (`https://llm.jetstream-cloud.org/api`), with your key injected by
+the sandbox proxy at egress — the key never exists inside the sandbox.
+Published as `ghcr.io/njg4ne/sbx-pi-js2-kit`.
 
 The commands below were tested with the `sbx` CLI **v0.50.1**; flags and
 behavior can differ across versions, so if something fails, check
@@ -58,12 +58,63 @@ sbx run --name pi
 
 - **Tear down** — `sbx rm pi` (or `sbx rm ephi`).
 
-- **Open egress for just this sandbox** — the kit only allows
-  `llm.jetstream-cloud.org` and `registry.npmjs.org`. If your machine policy is
-  strict and you want this one sandbox to reach anything (arbitrary npm
-  packages, GitHub, …), add a rule scoped to the sandbox rather than widening
-  your global policy. There is no `*` host pattern; the all-traffic equivalent
-  is the CIDR `0.0.0.0/0`:
+Bound vs. mountless in one line each: **bound** mounts your cwd read-write at
+the same absolute path — Pi edits your real files. **Mountless** mounts
+nothing — Pi works in the sandbox's own filesystem; move files with
+`sbx cp`.
+
+## What you must set up (one-time, per machine)
+
+1. **Docker Sandboxes installed and signed in** — the `sbx` CLI
+   ([install](https://docs.docker.com/ai/sandboxes/install/)) plus
+   `sbx login`.
+
+2. **Allow this kit's GHCR source.** `kit.allowedSources` **replaces the
+   entire list** (default `["docker.io/"]`) — write back what you want to
+   keep:
+
+   ```bash
+   sbx settings set kit.allowedSources '["docker.io/","ghcr.io/njg4ne/"]'
+   ```
+
+   One-off without touching your settings — the same value is read from an
+   environment variable:
+
+   ```bash
+   DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES='["docker.io/","ghcr.io/njg4ne/"]' \
+     sbx run --name pi ghcr.io/njg4ne/sbx-pi-js2-kit
+   ```
+
+   If a run fails with `source is not in your allowlist`, this is the step
+   you're missing. See [kit sources](https://docs.docker.com/ai/sandboxes/configuration/settings/#kitallowedsources)
+   for source formats.
+
+3. **The JS2 secret.** Assumes you have access to Jetstream Cloud through the
+   Open Web UI proxy and have created an API key in the Open Web UI settings:
+
+   ```bash
+   sbx secret set js2        # paste the key when prompted
+   ```
+
+That's the whole required list. Everything else is situation-dependent or
+optional.
+
+## Required in certain situations
+
+- **Non-interactive/CI with no network preset set** — the CLI can't prompt
+  for one, so set it first: `sbx policy init balanced` (or `allow-all` /
+  `deny-all`). Interactively, you're prompted on first run — nothing to do.
+- **Machine policy stricter than the kit's needs** — the kit already allows
+  `llm.jetstream-cloud.org` and `registry.npmjs.org`, so a plain JS2 session
+  works on any policy. If you want the agent to reach more, add per-sandbox
+  rules ([network rules](https://docs.docker.com/ai/governance/local/network-rules/)):
+
+  ```bash
+  sbx policy allow network --sandbox pi github.com
+  ```
+
+  To give one sandbox *all* egress there is no `*` host pattern — the
+  all-traffic equivalent is the CIDR `0.0.0.0/0`:
 
   ```bash
   sbx policy allow network --sandbox pi 0.0.0.0/0
@@ -72,122 +123,64 @@ sbx run --name pi
   ```
 
   > **Danger.** This removes the network isolation for that sandbox: the agent
-  > can reach any host on the internet — read and exfiltrate everything in its
-  > workspace, download and run anything. The whole point of the sandbox is
-  > least-privilege egress. Prefer the kit's own allowlist (or a deny-all
-  > policy plus named hosts) and only open `0.0.0.0/0` deliberately.
+  > can reach any host — read and exfiltrate everything in its workspace,
+  > download and run anything. Prefer the kit's allowlist or named hosts, and
+  > only open `0.0.0.0/0` deliberately.
+- **After changing the secret or the kit** — credential bindings and kit
+  content are wired **at sandbox create time**; recreate the sandbox to pick
+  up changes (`sbx rm pi && sbx run --name pi …`). Re-enter the key later
+  with `sbx secret set -f js2`.
 
-### With or without your current directory
+## Optional levers
 
-- **Bound** (`sbx run <kit>` or `sbx create <kit> .`): your cwd is mounted
-  read-write at the same absolute path inside the sandbox. Pi edits your real
-  files; host and sandbox see the same tree.
-- **Mountless** (`sbx create <kit>` with no path): nothing from your machine is
-  mounted. Pi works in `/home/agent/workspace` inside the sandbox; files there
-  persist across stop/restart and die with the sandbox. Copy things in and out
-  with `sbx cp`.
+- **SSH into any sandbox** (experimental):
 
-## Prerequisites (one-time, per machine)
+  ```bash
+  sbx setup ssh        # once; idempotent
+  ssh pi.sbx           # keyless: daemon socket + your Docker login
+  ```
 
-1. **Docker Sandboxes installed and signed in** — the `sbx` CLI from
-   [Install](https://docs.docker.com/ai/sandboxes/install/), plus
-   `sbx login` (v0.50.1 or later recommended).
+- **A broad machine-wide network policy** — presets are `allow-all`,
+  `balanced`, `deny-all`. Check what's active with `sbx policy ls` and
+  `sbx policy check network llm.jetstream-cloud.org`; to change the preset you
+  must reset first (deletes *all* local rules, stops running sandboxes):
 
-2. **Allow this kit's GHCR source — without clobbering your defaults.**
-   `kit.allowedSources` **replaces the entire list** (the default is
-   `["docker.io/"]`), so write back whatever you want to keep:
+  ```bash
+  sbx policy reset --force && sbx policy init allow-all
+  ```
 
-   ```bash
-   sbx settings set kit.allowedSources '["docker.io/","ghcr.io/njg4ne/"]'
-   ```
+- **`--model/--provider` model selection** (experimental) — **not needed for
+  this kit**, which talks directly to JS2. Only if you also want llmman
+  routing (local GGUF, Ollama, hosted providers):
 
-   One-off, without touching your settings at all — the same value is read
-   from an environment variable, so a single command can carry it:
+  ```bash
+  sbx settings set platform.allowExperimentalFeatures true
+  sbx settings set feature.model true
+  ```
 
-   ```bash
-   DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES='["docker.io/","ghcr.io/njg4ne/"]' \
-     sbx run --name pi ghcr.io/njg4ne/sbx-pi-js2-kit
-   ```
+  Experimental means it can change or disappear between releases; enabling it
+  also starts the bundled `llmman` service, which downloads its runtime on
+  first start (skip that with `sbx settings set model.server.enabled false &&
+  sbx daemon restart`). See
+  [Use local and hosted models](https://docs.docker.com/ai/sandboxes/configuration/models/).
 
-   If a run fails with `kit "…": source is not in your allowlist`, this is the
-   step you're missing.
+## Things to know
 
-### Provider configuration
+- **A bound workspace is fully writable** — the agent can read, write, and
+  delete anything under the mounted directory, including dotfiles and git
+  hooks, and it has `sudo` plus a private Docker engine inside the VM. If you
+  have doubts, run mountless or from a scratch directory.
+  ([Default security posture](https://docs.docker.com/ai/sandboxes/security/defaults/))
+- **Your JS2 key is never in the sandbox** — the agent sees a sentinel; the
+  sandbox proxy swaps in the real credential only on egress to
+  `llm.jetstream-cloud.org`. ([Credentials](https://docs.docker.com/ai/sandboxes/security/configuration/credentials/))
+- **Mountless files die with the sandbox** — they persist across stop/restart
+  but are deleted by `sbx rm`; copy anything you want out with `sbx cp` first.
+- **`pi-image` rolls nightly** — it tracks the latest pi release, so a fresh
+  sandbox boots the current pi; pinning the *kit* does not pin the *pi
+  version*.
 
-3. **The JS2 secret.** Assumes you have access to Jetstream Cloud through the
-   Open Web UI proxy and have created an API key in the Open Web UI settings.
-   Store it once:
-
-   ```bash
-   sbx secret set js2        # paste the key when prompted
-   ```
-
-   Credential bindings are wired **at sandbox create time** — after changing
-   the secret (or the kit), recreate the sandbox (`sbx rm pi && sbx run --name
-   pi …`). Re-enter later with `sbx secret set -f js2`.
-
-4. **Model selection flags (optional for this kit).** If you also want
-   `sbx run --model/--provider` (llmman routing: local GGUF models, host
-   Ollama, hosted providers):
-
-   ```bash
-   sbx settings set platform.allowExperimentalFeatures true
-   sbx settings set feature.model true
-   ```
-
-   *Purpose:* these two settings switch on the experimental `--model`/
-   `--provider` flags backed by the bundled `llmman` model service.
-   *Safety:* they are experimental — behavior can change or be removed between
-   releases without warning — and enabling the model feature starts `llmman`
-   with the daemon, which downloads its llama.cpp runtime on first start.
-   This kit does **not** need them: it talks directly to JS2 through its own
-   provider config. If you don't use `--model`, turn the bundled service off
-   to skip the runtime download:
-   `sbx settings set model.server.enabled false && sbx daemon restart`.
-
-## General Docker Sandboxes setup
-
-These are one-time, machine-wide conveniences that also apply to this
-sandbox.
-
-### SSH into any sandbox
-
-```bash
-sbx setup ssh        # once; idempotent, safe to re-run
-ssh pi.sbx           # now works, no prompts, no client key
-```
-
-Experimental. Writes a generated SSH config + `known_hosts` and includes it
-from `~/.ssh/config`; authentication goes through the daemon's local socket
-plus your Docker login (`sbx login` first), so no SSH key is needed. Works for
-every sandbox you run, this one included. Remove with `sbx setup ssh remove`.
-
-### Reset or widen the network policy
-
-Check what's active first:
-
-```bash
-sbx policy ls
-sbx policy check network llm.jetstream-cloud.org
-```
-
-If you want a broad policy (or you reset a strict one), the presets are
-`allow-all`, `balanced`, and `deny-all`. `sbx policy init` only works before a
-preset exists, so to change it you must reset first:
-
-```bash
-sbx policy reset                              # wipes ALL local rules, restarts
-                                              # the daemon, prompts for preset
-sbx policy reset --force                      # same, no confirmation
-sbx policy init allow-all                     # or balanced / deny-all
-```
-
-> **Warning:** `sbx policy reset` deletes every locally configured rule —
-> including destinations you individually approved — and running sandboxes
-> stop when the daemon restarts. Non-interactive form:
-> `sbx --no-input policy reset --force && sbx policy init allow-all`.
-
-### Verify the kit works
+## Verify
 
 Inside the sandbox:
 
@@ -202,11 +195,7 @@ or just ask it something: `pi -p "what version are you running"`.
 Authoritative sources this kit draws on:
 
 - [Docker Sandboxes documentation](https://docs.docker.com/ai/sandboxes/) —
-  the `sbx` CLI, kits, credential injection, and network policy. Specific
-  pages cited above: [usage](https://docs.docker.com/ai/sandboxes/usage/),
-  [network rules](https://docs.docker.com/ai/governance/local/network-rules/),
-  [default security posture](https://docs.docker.com/ai/sandboxes/security/defaults/),
-  [kit sources](https://docs.docker.com/ai/sandboxes/configuration/settings/#kitallowedsources).
+  the `sbx` CLI, kits, credential injection, and network policy.
 - [docker/sbx-kits-contrib](https://github.com/docker/sbx-kits-contrib) — the
   official Docker sandbox kits, including the
   [official Pi kit](https://github.com/docker/sbx-kits-contrib/tree/main/pi)
