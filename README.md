@@ -2,110 +2,190 @@
 
 A [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) kit that runs the
 [Pi](https://pi.dev) coding agent against **Jetstream Cloud (JS2)** inference,
-through the Open Web UI proxy.
+through the Open Web UI proxy. The stock `docker.io/sbx/pi-kit` is wired for
+llmman's Anthropic routing only; this kit reuses the same pre-baked
+`docker.io/sbx/pi-image:latest` but gives Pi its own `js2` OpenAI-compatible
+provider (`https://llm.jetstream-cloud.org/api`), with your key injected by the
+sandbox proxy as a `Bearer` header — the key never touches the sandbox
+filesystem. Published as `ghcr.io/njg4ne/sbx-pi-js2-kit`.
 
-Pi reads its model providers from its own `~/.pi/agent/models.json`, so this
-kit does not depend on Docker's bundled `llmman` router (which the stock
-`docker.io/sbx/pi-kit` is wired for, Anthropic only). Instead, this kit:
+The commands below were tested with the `sbx` CLI **v0.50.1**; flags and
+behavior can differ across versions, so if something fails, check
+`sbx --version` first.
 
-- reuses the pre-baked `docker.io/sbx/pi-image:latest` base image,
-- injects your JS2 API key into the sandbox as a proxy-managed credential
-  (header `Authorization: Bearer <key>` for `llm.jetstream-cloud.org` — the key
-  never appears in the sandbox filesystem or environment),
-- ships `~/.pi/agent/models.json` defining a `js2` OpenAI-compatible provider
-  pointing at `https://llm.jetstream-cloud.org/api`, with the API key resolved
-  from the injected `JS2_API_KEY` env var at runtime.
+## Run it
 
-Published as an OCI kit reference: `ghcr.io/njg4ne/sbx-pi-js2-kit`.
+The two base forms. Always pass `--name`: without it the sandbox is named
+`<agent>-<workdir>`, which is long and depends on where you stand. Short names
+keep every follow-up command (`sbx run --name …`, `ssh …`, `sbx rm …`)
+cheap to type. `pi` = kept around, `ephi` = ephemeral.
 
-## Quick start
+```bash
+# One command: binds your current directory, attaches to Pi
+sbx run --name pi ghcr.io/njg4ne/sbx-pi-js2-kit
 
-### Prerequisites
+# Create, then run: same thing in two steps (create with no attach,
+# attach whenever you like)
+sbx create --name pi ghcr.io/njg4ne/sbx-pi-js2-kit .
+sbx run --name pi
+```
+
+### Variations (combine freely)
+
+- **Ephemeral** — add `--rm` to the *run* so the sandbox is deleted when the
+  session exits; rename to `ephi` to match:
+
+  ```bash
+  sbx run --rm --name ephi ghcr.io/njg4ne/sbx-pi-js2-kit
+  ```
+
+- **Without your current directory** — omit the path at *create* time; the
+  sandbox is mountless and Pi works in its own `/home/agent/workspace`:
+
+  ```bash
+  sbx create --name ephi ghcr.io/njg4ne/sbx-pi-js2-kit
+  sbx run --rm --name ephi
+  ```
+
+- **Re-attach from anywhere** — a named sandbox re-attaches from any working
+  directory; no agent or path needed:
+
+  ```bash
+  sbx run --name pi
+  ```
+
+- **Tear down** — `sbx rm pi` (or `sbx rm ephi`).
+
+- **Open egress for just this sandbox** — the kit only allows
+  `llm.jetstream-cloud.org` and `registry.npmjs.org`. If your machine policy is
+  strict and you want this one sandbox to reach anything (arbitrary npm
+  packages, GitHub, …), add a rule scoped to the sandbox rather than widening
+  your global policy. There is no `*` host pattern; the all-traffic equivalent
+  is the CIDR `0.0.0.0/0`:
+
+  ```bash
+  sbx policy allow network --sandbox pi 0.0.0.0/0
+  # ...later:
+  sbx policy rm network --sandbox pi --resource 0.0.0.0/0
+  ```
+
+  > **Danger.** This removes the network isolation for that sandbox: the agent
+  > can reach any host on the internet — read and exfiltrate everything in its
+  > workspace, download and run anything. The whole point of the sandbox is
+  > least-privilege egress. Prefer the kit's own allowlist (or a deny-all
+  > policy plus named hosts) and only open `0.0.0.0/0` deliberately.
+
+### With or without your current directory
+
+- **Bound** (`sbx run <kit>` or `sbx create <kit> .`): your cwd is mounted
+  read-write at the same absolute path inside the sandbox. Pi edits your real
+  files; host and sandbox see the same tree.
+- **Mountless** (`sbx create <kit>` with no path): nothing from your machine is
+  mounted. Pi works in `/home/agent/workspace` inside the sandbox; files there
+  persist across stop/restart and die with the sandbox. Copy things in and out
+  with `sbx cp`.
+
+## Prerequisites (one-time, per machine)
 
 1. **Docker Sandboxes installed and signed in** — the `sbx` CLI from
-   [Docker Sandboxes: Install](https://docs.docker.com/ai/sandboxes/install/).
-2. **Allow the GHCR source for this kit.** Docker Sandboxes only installs kits
-   from allowlisted sources; this kit lives on GHCR. Run once:
+   [Install](https://docs.docker.com/ai/sandboxes/install/), plus
+   `sbx login` (v0.50.1 or later recommended).
+
+2. **Allow this kit's GHCR source — without clobbering your defaults.**
+   `kit.allowedSources` **replaces the entire list** (the default is
+   `["docker.io/"]`), so write back whatever you want to keep:
 
    ```bash
-   sbx settings set kit.allowedSources '["docker.io/","dhi.io/","ghcr.io/njg4ne/"]'
+   sbx settings set kit.allowedSources '["docker.io/","ghcr.io/njg4ne/"]'
    ```
 
-   If you get an error about `kit.allowedSources` when running the commands
-   below, this is the step you're missing.
-3. **A JS2 API key.** This assumes you have access to Jetstream Cloud through
-   the Open Web UI proxy and have created an API key in the Open Web UI
-   settings. Store it as the `js2` sandbox secret, run once:
+   One-off, without touching your settings at all — the same value is read
+   from an environment variable, so a single command can carry it:
 
    ```bash
-   sbx secret set js2
+   DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES='["docker.io/","ghcr.io/njg4ne/"]' \
+     sbx run --name pi ghcr.io/njg4ne/sbx-pi-js2-kit
    ```
 
-   and paste the key when prompted. If you need to change it later:
-   `sbx secret set -f js2`.
+   If a run fails with `kit "…": source is not in your allowlist`, this is the
+   step you're missing.
 
-After any secret or kit change, recreate the sandbox — credentials and
-bindings are wired at create time.
+### Provider configuration
 
-### Run it
+3. **The JS2 secret.** Assumes you have access to Jetstream Cloud through the
+   Open Web UI proxy and have created an API key in the Open Web UI settings.
+   Store it once:
 
-Pick the flavor you want. Two axes:
+   ```bash
+   sbx secret set js2        # paste the key when prompted
+   ```
 
-- **Workspace**: current directory bound into the sandbox (Pi works on your
-  files) vs. mountless (Pi works in the sandbox's own
-  `/home/agent/workspace`, nothing on your machine is touched).
-- **Lifetime**: `--rm` (ephemeral — sandbox is deleted when the session
-  exits) vs. kept (sandbox persists so you can re-attach or `sbx exec` later).
+   Credential bindings are wired **at sandbox create time** — after changing
+   the secret (or the kit), recreate the sandbox (`sbx rm pi && sbx run --name
+   pi …`). Re-enter later with `sbx secret set -f js2`.
 
-Sandbox names are short on purpose: `ephi` = ephemeral pi, `pi` = kept pi.
+4. **Model selection flags (optional for this kit).** If you also want
+   `sbx run --model/--provider` (llmman routing: local GGUF models, host
+   Ollama, hosted providers):
 
-#### 1. Current directory bound, ephemeral (default choice)
+   ```bash
+   sbx settings set platform.allowExperimentalFeatures true
+   sbx settings set feature.model true
+   ```
 
-```bash
-sbx run --rm --name ephi ghcr.io/njg4ne/sbx-pi-js2-kit
-```
+   *Purpose:* these two settings switch on the experimental `--model`/
+   `--provider` flags backed by the bundled `llmman` model service.
+   *Safety:* they are experimental — behavior can change or be removed between
+   releases without warning — and enabling the model feature starts `llmman`
+   with the daemon, which downloads its llama.cpp runtime on first start.
+   This kit does **not** need them: it talks directly to JS2 through its own
+   provider config. If you don't use `--model`, turn the bundled service off
+   to skip the runtime download:
+   `sbx settings set model.server.enabled false && sbx daemon restart`.
 
-Pi opens in your current directory; when you exit, the sandbox and all of its
-files are gone.
+## General Docker Sandboxes setup
 
-#### 2. Current directory bound, persistent
+These are one-time, machine-wide conveniences that also apply to this
+sandbox.
 
-```bash
-sbx run --name pi ghcr.io/njg4ne/sbx-pi-js2-kit
-```
-
-Same as above but the sandbox sticks around after you exit. Re-attach from any
-directory with:
-
-```bash
-sbx run --name pi
-```
-
-Remove it when you're done: `sbx rm pi`.
-
-#### 3. No host files bound, ephemeral
-
-```bash
-sbx create --name ephi ghcr.io/njg4ne/sbx-pi-js2-kit
-sbx run --rm --name ephi
-```
-
-`sbx create` without a path makes a mountless sandbox — useful for trying
-things out without binding any files. Files Pi creates live in
-`/home/agent/workspace` inside the sandbox; copy them out with `sbx cp` before
-the session ends.
-
-#### 4. No host files bound, persistent
+### SSH into any sandbox
 
 ```bash
-sbx create --name pi ghcr.io/njg4ne/sbx-pi-js2-kit
-sbx run --name pi
+sbx setup ssh        # once; idempotent, safe to re-run
+ssh pi.sbx           # now works, no prompts, no client key
 ```
 
-Mountless sandbox that survives between sessions. Re-attach with
-`sbx run --name pi`; delete with `sbx rm pi`.
+Experimental. Writes a generated SSH config + `known_hosts` and includes it
+from `~/.ssh/config`; authentication goes through the daemon's local socket
+plus your Docker login (`sbx login` first), so no SSH key is needed. Works for
+every sandbox you run, this one included. Remove with `sbx setup ssh remove`.
 
-### Verify it works
+### Reset or widen the network policy
+
+Check what's active first:
+
+```bash
+sbx policy ls
+sbx policy check network llm.jetstream-cloud.org
+```
+
+If you want a broad policy (or you reset a strict one), the presets are
+`allow-all`, `balanced`, and `deny-all`. `sbx policy init` only works before a
+preset exists, so to change it you must reset first:
+
+```bash
+sbx policy reset                              # wipes ALL local rules, restarts
+                                              # the daemon, prompts for preset
+sbx policy reset --force                      # same, no confirmation
+sbx policy init allow-all                     # or balanced / deny-all
+```
+
+> **Warning:** `sbx policy reset` deletes every locally configured rule —
+> including destinations you individually approved — and running sandboxes
+> stop when the daemon restarts. Non-interactive form:
+> `sbx --no-input policy reset --force && sbx policy init allow-all`.
+
+### Verify the kit works
 
 Inside the sandbox:
 
@@ -114,27 +194,3 @@ pi auth check --provider js2 --credentials --json
 ```
 
 or just ask it something: `pi -p "what version are you running"`.
-
-## Kit layout
-
-```
-spec.yaml                        # v2 sandbox kit spec (image, credentials, entrypoint)
-files/home/.pi/agent/models.json # Pi provider "js2" (OpenAI-compatible, JS2 base URL)
-files/home/.pi/agent/settings.json
-```
-
-`spec.yaml` declares the `js2` credential service with `proxyManaged: true` and
-an inject rule that adds the `Authorization` header on requests to
-`llm.jetstream-cloud.org`. `models.json` references `$JS2_API_KEY`, which Pi
-resolves from the environment the proxy injects — the key itself is never
-written into the sandbox.
-
-## Rebuild / republish
-
-From a checkout of the parent repo (which contains this kit and a `push.sh` helper):
-
-```bash
-./push.sh            # pushes ghcr.io/njg4ne/sbx-pi-js2-kit:latest
-./push.sh v1         # pushes a tagged version
-./push.sh -r         # also re-prompts for the GHCR registry secret
-```
