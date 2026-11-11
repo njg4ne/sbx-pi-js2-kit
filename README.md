@@ -26,6 +26,14 @@ instance, allocation, or credits required** to use the inference service.
 That API key is the only thing this kit needs (see
 [the JS2 secret](#prerequisites-one-time-per-machine)).
 
+Note the endpoint this kit uses: the Open Web UI proxy at
+`https://llm.jetstream-cloud.org/api` — OpenAI-compatible, **no `/v1`
+suffix, no tunnel**, just the API key. Jetstream's
+[API usage examples](https://docs.jetstream-cloud.org/inference-service/api-examples/)
+also show per-model `…/<model>/v1` endpoints meant for running from a
+Jetstream2 instance or a tunnelled connection; this kit does not use
+that path.
+
 ## Run it
 
 The two base forms. Always pass `--name`: without it the sandbox is named
@@ -217,6 +225,19 @@ pi auth check --provider js2 --credentials --json
 
 or just ask it something: `pi -p "what version are you running"`.
 
+## Keeping it current
+
+Jetstream's model lineup and configurations change often, so this repo
+can go stale in one specific place: the bundled Pi config under
+`files/home/.pi/agent/`. The two files are **coupled** — `models.json`
+lists the available models (ids, context windows, reasoning/thinking
+settings) and `settings.json`'s `defaultModel` must name one of them.
+If Pi reports an unknown model or a missing default, check the current
+model list in the
+[API usage examples](https://docs.jetstream-cloud.org/inference-service/api-examples/)
+or the [inference service overview](https://docs.jetstream-cloud.org/inference-service/overview/),
+update both files to match, and re-push the kit.
+
 ## About these docs
 
 Drafted by **Qwen 3.8 27B** running in the [pi](https://pi.dev) coding agent
@@ -243,9 +264,12 @@ Authoritative sources this kit draws on:
   spec.yaml, READMEs) is the reference implementation for how a Pi sandbox
   kit is built and why each piece exists.
 - [Jetstream Cloud documentation](https://docs.jetstream-cloud.org/) — the
-  inference service this kit targets, including the
-  [inference service overview](https://docs.jetstream-cloud.org/inference-service/overview/)
-  (access through the Open Web UI proxy, API keys).
+  inference service this kit targets: [inference service
+  overview](https://docs.jetstream-cloud.org/inference-service/overview/)
+  (access through the Open Web UI proxy, API keys), the
+  [Open Web UI](https://docs.jetstream-cloud.org/inference-service/ui/),
+  and [API usage examples](https://docs.jetstream-cloud.org/inference-service/api-examples/)
+  (model list and endpoint variants).
 - [Pi (pi-coding-agent)](https://pi.dev) — the coding agent itself
   ([npm](https://www.npmjs.com/package/@earendil-works/pi-coding-agent)); its
   `models.json`/`settings.json` provider config is what this kit supplies.
