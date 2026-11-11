@@ -22,7 +22,7 @@ Indiana University. With that login you can sign in to Jetstream Cloud's
 Open Web UI and create an API key for its OpenAI-compatible API — **no
 instance, allocation, or credits required** to use the inference service.
 That API key is the only thing this kit needs (see
-[the JS2 secret](#what-you-must-set-up-one-time-per-machine)).
+[the JS2 secret](#prerequisites-one-time-per-machine)).
 
 ## Run it
 
@@ -74,7 +74,7 @@ the same absolute path — Pi edits your real files. **Mountless** mounts
 nothing — Pi works in the sandbox's own filesystem; move files with
 `sbx cp`.
 
-## What you must set up (one-time, per machine)
+## Prerequisites (one-time, per machine)
 
 1. **Docker Sandboxes installed and signed in** — the `sbx` CLI
    ([install](https://docs.docker.com/ai/sandboxes/install/)) plus
@@ -112,7 +112,7 @@ nothing — Pi works in the sandbox's own filesystem; move files with
 That's the whole required list. Everything else is situation-dependent or
 optional.
 
-## Required in certain situations
+## Conditional setup
 
 - **Non-interactive/CI with no network preset set** — the CLI can't prompt
   for one, so set it first: `sbx policy init balanced` (or `allow-all` /
@@ -141,7 +141,7 @@ optional.
   up changes (`sbx rm pi && sbx run --name pi …`). Re-enter the key later
   with `sbx secret set -f js2`.
 
-## Optional levers
+## Optional setup
 
 - **SSH into any sandbox** (experimental):
 
@@ -174,7 +174,7 @@ optional.
   sbx daemon restart`). See
   [Use local and hosted models](https://docs.docker.com/ai/sandboxes/configuration/models/).
 
-## Things to know
+## Security: what the sandbox protects — and what it doesn't
 
 - **A bound workspace is fully writable** — the agent can read, write, and
   delete anything under the mounted directory, including dotfiles and git
@@ -205,7 +205,7 @@ optional.
   sandbox boots the current pi; pinning the *kit* does not pin the *pi
   version*.
 
-## Verify
+## Verifying the setup
 
 Inside the sandbox:
 
