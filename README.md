@@ -179,6 +179,21 @@ optional.
   hooks, and it has `sudo` plus a private Docker engine inside the VM. If you
   have doubts, run mountless or from a scratch directory.
   ([Default security posture](https://docs.docker.com/ai/sandboxes/security/defaults/))
+- **The kit is deliberately all read-write on the bound path** — an opinion
+  worth naming. You *could* go finer (read-only mounts, per-path rules via
+  [filesystem policy](https://docs.docker.com/ai/governance/reference/filesystem-rules/)),
+  but a coding agent that can't write to your project is significantly nerfed,
+  and the workaround — have it write elsewhere in the sandbox and extract the
+  artifacts — is more headache than it's worth. The point of this kit is
+  scoped read+write on the one path you chose to bind.
+- **The trust trade-off behind that design** — with full read/write plus the
+  egress you allow, the agent can fill the bound folder with junk, or write a
+  script and talk you into running it *on your host*: the sandbox stops the
+  agent, not a user who executes what the agent printed. If you generally
+  trust that the agent is trying to help you (even when it messes up) and the
+  sandbox is one `sbx rm` away, that's an acceptable trade; otherwise keep the
+  bound path small and disposable, and review output before running anything
+  it suggests.
 - **Your JS2 key is never in the sandbox** — the agent sees a sentinel; the
   sandbox proxy swaps in the real credential only on egress to
   `llm.jetstream-cloud.org`. ([Credentials](https://docs.docker.com/ai/sandboxes/security/configuration/credentials/))
