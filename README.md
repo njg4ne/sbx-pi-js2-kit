@@ -124,13 +124,16 @@ optional.
   sbx policy allow network --sandbox pi github.com
   ```
 
-  To give one sandbox *all* egress there is no `*` host pattern — the
-  all-traffic equivalent is the CIDR `0.0.0.0/0`:
+  To give one sandbox *all* egress, the documented routes are the
+  `allow-all` preset (machine-wide) or CIDR rules — `0.0.0.0/0` (IPv4) and
+  `::/0` (IPv6). A bare `*` is not a documented host pattern (the patterns
+  are `host`, `*.host`, `**.host`, `host:port`, CIDR); whether the CLI
+  rejects it is untested:
 
   ```bash
-  sbx policy allow network --sandbox pi 0.0.0.0/0
+  sbx policy allow network --sandbox pi 0.0.0.0/0 ::/0
   # ...later:
-  sbx policy rm network --sandbox pi --resource 0.0.0.0/0
+  sbx policy rm network --sandbox pi --resource 0.0.0.0/0 --resource ::/0
   ```
 
   > **Danger.** This removes the network isolation for that sandbox: the agent
