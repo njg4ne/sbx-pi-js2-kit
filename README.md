@@ -17,9 +17,11 @@ behavior can differ across versions, so if something fails, check
 
 Academics and researchers with a [Jetstream Cloud](https://www.jetstream-cloud.org/)
 account — the NSF-funded (NSF ACCESS) research cyberinfrastructure at
-Indiana University. With that login you can sign in to Jetstream Cloud's
+Indiana University. With that login you can sign in to the
+[Open Web UI](https://docs.jetstream-cloud.org/inference-service/ui/) of
+Jetstream Cloud's
 [LLM inference service](https://docs.jetstream-cloud.org/inference-service/overview/)
-Open Web UI and create an API key for its OpenAI-compatible API — **no
+and create an API key for its OpenAI-compatible API — **no
 instance, allocation, or credits required** to use the inference service.
 That API key is the only thing this kit needs (see
 [the JS2 secret](#prerequisites-one-time-per-machine)).
@@ -198,7 +200,7 @@ optional.
   it suggests.
 - **Your JS2 key is never in the sandbox** — the agent sees a sentinel; the
   sandbox proxy swaps in the real credential only on egress to
-  `llm.jetstream-cloud.org`. ([Credentials](https://docs.docker.com/ai/sandboxes/security/configuration/credentials/))
+  `llm.jetstream-cloud.org`. ([Credentials](https://docs.docker.com/ai/sandboxes/configuration/credentials/))
 - **Mountless files die with the sandbox** — they persist across stop/restart
   but are deleted by `sbx rm`; copy anything you want out with `sbx cp` first.
 - **`pi-image` rolls nightly** — it tracks the latest pi release, so a fresh
