@@ -194,3 +194,33 @@ pi auth check --provider js2 --credentials --json
 ```
 
 or just ask it something: `pi -p "what version are you running"`.
+
+## Sources and references
+
+Authoritative sources this kit draws on:
+
+- [Docker Sandboxes documentation](https://docs.docker.com/ai/sandboxes/) —
+  the `sbx` CLI, kits, credential injection, and network policy. Specific
+  pages cited above: [usage](https://docs.docker.com/ai/sandboxes/usage/),
+  [network rules](https://docs.docker.com/ai/governance/local/network-rules/),
+  [default security posture](https://docs.docker.com/ai/sandboxes/security/defaults/),
+  [kit sources](https://docs.docker.com/ai/sandboxes/configuration/settings/#kitallowedsources).
+- [docker/sbx-kits-contrib](https://github.com/docker/sbx-kits-contrib) — the
+  official Docker sandbox kits, including the
+  [official Pi kit](https://github.com/docker/sbx-kits-contrib/tree/main/pi)
+  that this kit inherits from: we reuse its pre-baked
+  `docker.io/sbx/pi-image:latest` base image and follow its spec conventions
+  (explicit egress allowlist, proxy-managed credential injection, bundled
+  agent config under `files/`). The `pi/` directory there (Dockerfile,
+  spec.yaml, READMEs) is the reference implementation for how a Pi sandbox
+  kit is built and why each piece exists.
+- [Jetstream Cloud documentation](https://docs.jetstream-cloud.org/) — the
+  inference service this kit targets, including the
+  [inference service overview](https://docs.jetstream-cloud.org/inference-service/overview/)
+  (access through the Open Web UI proxy, API keys).
+- [Pi (pi-coding-agent)](https://pi.dev) — the coding agent itself
+  ([npm](https://www.npmjs.com/package/@earendil-works/pi-coding-agent)); its
+  `models.json`/`settings.json` provider config is what this kit supplies.
+- [llmman](https://github.com/llmmanorg/llmman) — Docker Sandboxes' bundled
+  model router, referenced for context on `--model/--provider` and its Pi
+  integration.
