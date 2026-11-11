@@ -13,6 +13,17 @@ The commands below were tested with the `sbx` CLI **v0.50.1**; flags and
 behavior can differ across versions, so if something fails, check
 `sbx --version` first.
 
+### Who this is for
+
+Academics and researchers with a [Jetstream Cloud](https://www.jetstream-cloud.org/)
+account — the NSF-funded (NSF ACCESS) research cyberinfrastructure at
+Indiana University. With that login you can sign in to Jetstream Cloud's
+[LLM inference service](https://docs.jetstream-cloud.org/inference-service/overview/)
+Open Web UI and create an API key for its OpenAI-compatible API — **no
+instance, allocation, or credits required** to use the inference service.
+That API key is the only thing this kit needs (see
+[the JS2 secret](#what-you-must-set-up-one-time-per-machine)).
+
 ## Run it
 
 The two base forms. Always pass `--name`: without it the sandbox is named
