@@ -124,16 +124,13 @@ optional.
   sbx policy allow network --sandbox pi github.com
   ```
 
-  To give one sandbox *all* egress, the documented routes are the
-  `allow-all` preset (machine-wide) or CIDR rules — `0.0.0.0/0` (IPv4) and
-  `::/0` (IPv6). A bare `*` is not a documented host pattern (the patterns
-  are `host`, `*.host`, `**.host`, `host:port`, CIDR); whether the CLI
-  rejects it is untested:
+  To give one sandbox *all* egress, use the bare `**` wildcard, which
+  matches any host (tested on sbx v0.50.1):
 
   ```bash
-  sbx policy allow network --sandbox pi 0.0.0.0/0 ::/0
+  sbx policy allow network --sandbox pi "**"
   # ...later:
-  sbx policy rm network --sandbox pi --resource 0.0.0.0/0 --resource ::/0
+  sbx policy rm network --sandbox pi --resource "**"
   ```
 
   > **Danger.** This removes the network isolation for that sandbox: the agent
@@ -208,11 +205,11 @@ or just ask it something: `pi -p "what version are you running"`.
 
 Drafted by **Qwen 3.8 27B** running in the [pi](https://pi.dev) coding agent
 (itself running inside a sandbox of this kit, over the js2 provider), in
-back-and-forth with [@njg4ne](https://github.com/njg4ne), who oversaw and
-reviewed the result. Reviewed, but **not rigorously tested** — in particular,
-commands marked as unverified here (the `0.0.0.0/0` per-sandbox rule, the
-`DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES` one-off) were checked against the
-Docker docs but not executed. Report problems to the
+back-and-forth with [@njg4ne](https://github.com/njg4ne), who oversaw,
+reviewed, and tested the commands hands-on (the per-sandbox `**` egress
+rule in particular). Still not rigorously tested as a whole — in
+particular, the `DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES` one-off was checked
+against the Docker docs but not executed. Report problems to the
 [kit repository](https://github.com/njg4ne/sbx-pi-js2-kit).
 
 ## Sources and references
