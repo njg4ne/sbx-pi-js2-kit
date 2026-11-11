@@ -4,7 +4,7 @@
 set -euo pipefail
 
 REGISTRY="ghcr.io"
-KIT_DIR="./pi-js2-kit"
+KIT_DIR="."
 IMAGE="ghcr.io/njg4ne/sbx-pi-js2-kit"
 
 # Parse args: one optional flag plus one optional positional tag.
