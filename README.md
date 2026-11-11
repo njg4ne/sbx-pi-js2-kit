@@ -84,19 +84,22 @@ nothing — Pi works in the sandbox's own filesystem; move files with
    way in: `sbx login` with GitHub OAuth.
 
 2. **Allow this kit's GHCR source.** `kit.allowedSources` **replaces the
-   entire list** (default `["docker.io/"]`) — write back what you want to
-   keep:
+   entire list** — so append to what you already have instead of
+   overwriting it:
 
    ```bash
-   sbx settings set kit.allowedSources '["docker.io/","ghcr.io/njg4ne/"]'
+   sbx settings get kit.allowedSources   # e.g. ["docker.io/","dhi.io/"]
+   sbx settings set kit.allowedSources '["docker.io/","dhi.io/","ghcr.io/njg4ne/"]'
    ```
 
-   There is **no per-command override**: the check runs in the `sandboxd`
-   daemon, and the env-var equivalent
-   (`DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES`) only takes effect on
-   `sbx daemon restart` — a variable prefixed to a single `sbx run` does
-   nothing while the daemon is already running (tested). Just set the
-   setting. See [kit sources](https://docs.docker.com/ai/sandboxes/configuration/settings/#kitallowedsources)
+   (`dhi.io/` = Docker Hardened Images; if it's in your list, keep it.)
+   Easiest path: run the failing `sbx run` first — the allowlist error
+   prints your current list and a ready-to-paste `sbx settings set`
+   command that already includes it. (Don't bother with the
+   `DOCKER_SANDBOXES_KIT_ALLOWED_SOURCES` env var as a one-off: it only
+   takes effect on `sbx daemon restart`, so it changes daemon-wide
+   behavior, not one command.) See
+   [kit sources](https://docs.docker.com/ai/sandboxes/configuration/settings/#kitallowedsources)
    for source formats.
 
 3. **The JS2 secret.** Assumes you have access to Jetstream Cloud through the
